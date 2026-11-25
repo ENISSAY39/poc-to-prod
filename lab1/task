@@ -1,1 +1,55 @@
-suggest some tags names based on the question of the user. 
+Lab 1 — Suggestion de tags Stack Overflow
+==========================================
+
+Énoncé d'origine : "suggest some tags names based on the question (la colonne title
+dans le fichier csv) of the user" ; faire 2 modèles NLP : un modèle classique et un
+BERT (plus poussé).
+
+Version clarifiée
+-----------------
+
+Objectif
+  Pour le titre d'une question Stack Overflow, renvoyer les 3 tags les plus probables,
+  classés, avec leur score.
+
+Données : stackoverflow_posts.csv (voir eda.ipynb)
+  - Format long : une ligne par couple (post, tag). On regroupe par post_id pour obtenir
+    un titre et une liste de tags.
+  - Lire avec keep_default_na=False : le tag "null" existe et pandas le prend sinon pour NaN.
+  - L'entrée est uniquement le titre (environ 8 mots, pas de corps de question).
+
+Formulation
+  - Classification multi-label (1 à 5 tags par post, 2,2 en moyenne).
+  - Vocabulaire de tags = les K = 50 tags les plus fréquents (K paramétrable).
+  - Les posts sans aucun tag dans le vocabulaire (16,5 %) sont exclus du train, de la
+    validation et du test. On rapporte la couverture à part. Dans les posts gardés, les
+    tags hors vocabulaire sont ignorés.
+  - Sortie (suggestion) : top-k classé avec scores, k = 3.
+
+Modèles
+  1. Classique : TF-IDF (mots + n-grammes de caractères) + régression logistique
+     one-vs-rest. C choisi dans {0.1, 1, 10} sur le micro-F1 de validation.
+     -> docs/adr/0001-modele-classique-tfidf-logreg.md
+  2. BERT : fine-tuning de bert-base-uncased, tête multi-label (sigmoïde + BCE),
+     max_length = 64, lr 2e-5, batch 32, 5 epochs maximum, meilleure epoch gardée
+     sur la validation. Entraînement sur GPU (RTX 4060, 8 Go).
+     -> docs/adr/0002-modele-bert-fine-tune.md
+
+Évaluation
+  - Split 80/10/10 par post_id, même graine pour les deux modèles (même test set).
+  - Métriques : précision@3, rappel@3, F1 micro et F1 macro.
+
+Livrables (scripts, pas de notebook pour la modélisation)
+  lab1/scripts/
+    data.py      lecture du CSV, regroupement par post, vocabulaire top-K, split
+    metrics.py   précision@k, rappel@k, F1 micro/macro
+    classic.py   modèle classique (fit / suggest(titles, k))
+    bert.py      modèle BERT (même interface)
+    train.py     python scripts/train.py --model {classic,bert}
+                 -> entraîne, évalue sur le test, sauvegarde dans artifacts/<model>/
+    predict.py   python scripts/predict.py --model {classic,bert} "<titre>"
+                 -> recharge artifacts/<model>/ et affiche les 3 tags + scores
+  lab1/artifacts/<model>/   modèle, tags.json, metrics.json (non versionné)
+  lab1/tests/               pytest sur data.py et metrics.py (écrits par l'étudiant,
+                            hors du périmètre des tickets)
+  lab1/eda.ipynb            EDA (conservée)
