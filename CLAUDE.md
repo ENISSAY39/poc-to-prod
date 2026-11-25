@@ -24,6 +24,10 @@ Spécification complète : `lab1/task`. EDA : `lab1/eda.ipynb`.
 
 `.venv/` à la racine (Python 3.12), dépendances dans `requirements.txt`. GPU : RTX 4060, 8 Go (CUDA).
 
+## Commits
+
+Toujours passer par les skills : `/commit` pour committer, `/push` pour committer et pousser. Ne jamais lancer `git commit` ou `git push` à la main.
+
 ## Agent skills
 
 ### Issue tracker
